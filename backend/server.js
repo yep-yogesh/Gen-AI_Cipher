@@ -19,7 +19,10 @@ app.post("/api/ai", async (req, res) => {
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `
+    let prompt = "";
+
+    if (option === "one-shot") {
+      prompt = `
 You are an AI assistant. Here is one example of how to complete a task:
 
 Task: Summarize this text
@@ -30,6 +33,21 @@ Now perform the task: ${option}
 Input: ${userInput}
 Output:
 `;
+    } else if (option === "zero-shot") {
+      prompt = `
+You are an AI assistant. Perform the task directly without any examples.
+
+Task: ${option}
+Input: ${userInput}
+Output:
+`;
+    } else {
+      prompt = `
+You are an AI assistant. Perform the task: ${option}.
+Input: ${userInput}
+Output:
+`;
+    }
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
