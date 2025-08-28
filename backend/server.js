@@ -101,6 +101,9 @@ Assistant Output:
 `;
     }
 
+    const tokenInfo = await model.countTokens(prompt);
+    console.log(`🔢 Tokens used for this request: ${tokenInfo.totalTokens}`);
+
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
@@ -112,7 +115,7 @@ Assistant Output:
     });
 
     const responseText = result.response.text();
-    res.json({ response: responseText });
+    res.json({ response: responseText, tokens: tokenInfo.totalTokens });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Something went wrong" });
