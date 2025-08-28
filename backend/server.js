@@ -23,58 +23,65 @@ app.post("/api/ai", async (req, res) => {
 
     if (option === "one-shot") {
       prompt = `
-You are an AI assistant. Here is one example of how to complete a task:
+System: You are an AI assistant. Follow the RTFC framework (Role: assistant, Task: solve problem, Format: structured output, Context: example provided).
+User: Task: Summarize this text
+User Input: "Artificial Intelligence is transforming industries worldwide."
+Assistant Output: "AI is changing industries globally."
 
-Task: Summarize this text
-Input: "Artificial Intelligence is transforming industries worldwide."
-Output: "AI is changing industries globally."
-
-Now perform the task: ${option}
-Input: ${userInput}
-Output:
+System: Now complete the new request.
+User: Task: ${option}
+User Input: ${userInput}
+Assistant Output:
 `;
     } else if (option === "zero-shot") {
       prompt = `
-You are an AI assistant. Perform the task directly without any examples.
-
-Task: ${option}
-Input: ${userInput}
-Output:
+System: You are an AI assistant. Follow the RTFC framework. Perform the task without any examples.
+User: Task: ${option}
+User Input: ${userInput}
+Assistant Output:
 `;
     } else if (option === "multi-shot") {
       prompt = `
-You are an AI assistant. Here are multiple examples of how to complete a task:
+System: You are an AI assistant. Follow the RTFC framework. Here are multiple examples:
 
-Task: Summarize this text
-Input: "Artificial Intelligence is transforming industries worldwide."
-Output: "AI is changing industries globally."
+User: Task: Summarize this text
+User Input: "Artificial Intelligence is transforming industries worldwide."
+Assistant Output: "AI is changing industries globally."
 
-Task: Translate this text to French
-Input: "Hello, how are you?"
-Output: "Bonjour, comment ça va?"
+User: Task: Translate this text to French
+User Input: "Hello, how are you?"
+Assistant Output: "Bonjour, comment ça va?"
 
-Task: Convert this to uppercase
-Input: "innovation drives growth"
-Output: "INNOVATION DRIVES GROWTH"
+User: Task: Convert this to uppercase
+User Input: "innovation drives growth"
+Assistant Output: "INNOVATION DRIVES GROWTH"
 
-Now perform the task: ${option}
-Input: ${userInput}
-Output:
+System: Now complete the new request.
+User: Task: ${option}
+User Input: ${userInput}
+Assistant Output:
 `;
     } else if (option === "chain-of-thought") {
       prompt = `
-You are an AI assistant. Think step by step before giving the final answer. Show reasoning clearly, then provide the solution.
-
-Task: ${option}
-Input: ${userInput}
-Reasoning:
-Final Answer:
+System: You are an AI assistant. Follow the RTFC framework. Think step by step before final answer.
+User: Task: ${option}
+User Input: ${userInput}
+Assistant Reasoning:
+Assistant Final Answer:
+`;
+    } else if (option === "system-user") {
+      prompt = `
+System: You are an AI assistant. Your role is to strictly follow instructions, think logically, and return clear, correct outputs.
+User: Task: ${option}
+User Input: ${userInput}
+Assistant Output:
 `;
     } else {
       prompt = `
-You are an AI assistant. Perform the task: ${option}.
-Input: ${userInput}
-Output:
+System: You are an AI assistant. Perform the task as requested.
+User: Task: ${option}
+User Input: ${userInput}
+Assistant Output:
 `;
     }
 
