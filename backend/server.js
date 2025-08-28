@@ -13,21 +13,26 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 app.post("/api/ai", async (req, res) => {
   try {
     const { userInput, option } = req.body;
-
     if (!userInput || !option) {
       return res.status(400).json({ error: "Missing input or option" });
     }
 
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `You are an AI assistant. Perform the task: ${option}.
-    
-    Code:
-    ${userInput}`;
+    const prompt = `
+You are an AI assistant. Here is one example of how to complete a task:
+
+Task: Summarize this text
+Input: "Artificial Intelligence is transforming industries worldwide."
+Output: "AI is changing industries globally."
+
+Now perform the task: ${option}
+Input: ${userInput}
+Output:
+`;
 
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
-
     res.json({ response: responseText });
   } catch (err) {
     console.error(err);
@@ -37,4 +42,3 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
-
