@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Krona+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Silkscreen&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.font-krona {
+  font-family: 'Krona One', sans-serif;
+}
+.font-silkscreen {
+  font-family: 'Silkscreen', sans-serif;
+}
