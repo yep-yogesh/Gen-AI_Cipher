@@ -6,6 +6,8 @@ import AI from "./pages/ai";
 function App() {
   return (
     <Routes>
+      <Route path="/" element={<Intro />} />
+      <Route path="/ai" element={<AI />} />
     </Routes>
   );
 }
