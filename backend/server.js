@@ -106,6 +106,7 @@ Assistant Output:
       generationConfig: {
         temperature: 0.7,
         topP: 0.9,
+        topK: 40
       }
     });
 
