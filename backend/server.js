@@ -101,11 +101,11 @@ Assistant Output:
 `;
     }
 
-    // 🔥 Add generationConfig for Temperature / TopP / TopK
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.7,
+        topP: 0.9,
       }
     });
 
