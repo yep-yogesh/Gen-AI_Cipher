@@ -76,6 +76,22 @@ User: Task: ${option}
 User Input: ${userInput}
 Assistant Output:
 `;
+    } else if (option === "dynamic") {
+      let dynamicTask = "General Task";
+      if (userInput.length > 200) {
+        dynamicTask = "Summarize the following long text concisely";
+      } else if (userInput.includes("?")) {
+        dynamicTask = "Answer the following question clearly";
+      } else if (userInput.match(/translate to/i)) {
+        dynamicTask = "Translate the following text accordingly";
+      }
+
+      prompt = `
+System: You are an AI assistant. Use dynamic prompting to adapt the response based on input type.
+User: Task: ${dynamicTask}
+User Input: ${userInput}
+Assistant Output:
+`;
     } else {
       prompt = `
 System: You are an AI assistant. Perform the task as requested.
@@ -95,4 +111,6 @@ Assistant Output:
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
+);
