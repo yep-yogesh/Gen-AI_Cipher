@@ -23,10 +23,21 @@ app.post("/api/ai", async (req, res) => {
 
     if (option === "one-shot") {
       prompt = `
-System: You are an AI assistant. Follow the RTFC framework (Role: assistant, Task: solve problem, Format: structured output, Context: example provided).
+System: You are an AI assistant. Follow the RTFC framework (Role, Task, Format, Context).
+Always return output in valid JSON ONLY with this schema:
+{
+  "task": string,
+  "input": string,
+  "output": string
+}
+
 User: Task: Summarize this text
 User Input: "Artificial Intelligence is transforming industries worldwide."
-Assistant Output: "AI is changing industries globally."
+Assistant Output: {
+  "task": "Summarize text",
+  "input": "Artificial Intelligence is transforming industries worldwide.",
+  "output": "AI is changing industries globally."
+}
 
 System: Now complete the new request.
 User: Task: ${option}
@@ -35,26 +46,35 @@ Assistant Output:
 `;
     } else if (option === "zero-shot") {
       prompt = `
-System: You are an AI assistant. Follow the RTFC framework. Perform the task without any examples.
+System: You are an AI assistant. Follow RTFC and return only valid JSON with fields {task, input, output}.
 User: Task: ${option}
 User Input: ${userInput}
 Assistant Output:
 `;
     } else if (option === "multi-shot") {
       prompt = `
-System: You are an AI assistant. Follow the RTFC framework. Here are multiple examples:
+System: You are an AI assistant. Follow RTFC and return only valid JSON.
 
-User: Task: Summarize this text
-User Input: "Artificial Intelligence is transforming industries worldwide."
-Assistant Output: "AI is changing industries globally."
+Example 1:
+{
+  "task": "Summarize text",
+  "input": "Artificial Intelligence is transforming industries worldwide.",
+  "output": "AI is changing industries globally."
+}
 
-User: Task: Translate this text to French
-User Input: "Hello, how are you?"
-Assistant Output: "Bonjour, comment ça va?"
+Example 2:
+{
+  "task": "Translate text to French",
+  "input": "Hello, how are you?",
+  "output": "Bonjour, comment ça va?"
+}
 
-User: Task: Convert this to uppercase
-User Input: "innovation drives growth"
-Assistant Output: "INNOVATION DRIVES GROWTH"
+Example 3:
+{
+  "task": "Convert to uppercase",
+  "input": "innovation drives growth",
+  "output": "INNOVATION DRIVES GROWTH"
+}
 
 System: Now complete the new request.
 User: Task: ${option}
@@ -63,15 +83,15 @@ Assistant Output:
 `;
     } else if (option === "chain-of-thought") {
       prompt = `
-System: You are an AI assistant. Follow the RTFC framework. Think step by step before final answer.
+System: You are an AI assistant. Think step by step internally but return ONLY the final structured JSON.
+Schema: {task, input, output}
 User: Task: ${option}
 User Input: ${userInput}
-Assistant Reasoning:
-Assistant Final Answer:
+Assistant Output:
 `;
     } else if (option === "system-user") {
       prompt = `
-System: You are an AI assistant. Your role is to strictly follow instructions, think logically, and return clear, correct outputs.
+System: You are an AI assistant. Strictly return JSON with {task, input, output}.
 User: Task: ${option}
 User Input: ${userInput}
 Assistant Output:
@@ -87,14 +107,14 @@ Assistant Output:
       }
 
       prompt = `
-System: You are an AI assistant. Use dynamic prompting to adapt the response based on input type.
+System: You are an AI assistant. Use dynamic prompting but always return valid JSON {task, input, output}.
 User: Task: ${dynamicTask}
 User Input: ${userInput}
 Assistant Output:
 `;
     } else {
       prompt = `
-System: You are an AI assistant. Perform the task as requested.
+System: You are an AI assistant. Perform the task but always return JSON {task, input, output}.
 User: Task: ${option}
 User Input: ${userInput}
 Assistant Output:
@@ -114,8 +134,20 @@ Assistant Output:
       },
     });
 
-    const responseText = result.response.text();
-    res.json({ response: responseText, tokens: tokenInfo.totalTokens });
+    let responseText = result.response.text();
+
+    let structuredOutput;
+    try {
+      structuredOutput = JSON.parse(responseText);
+    } catch (e) {
+      structuredOutput = {
+        task: option,
+        input: userInput,
+        output: responseText.trim(),
+      };
+    }
+
+    res.json({ response: structuredOutput, tokens: tokenInfo.totalTokens });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Something went wrong" });
