@@ -101,7 +101,14 @@ Assistant Output:
 `;
     }
 
-    const result = await model.generateContent(prompt);
+    // 🔥 Add generationConfig for Temperature / TopP / TopK
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.7,
+      }
+    });
+
     const responseText = result.response.text();
     res.json({ response: responseText });
   } catch (err) {
