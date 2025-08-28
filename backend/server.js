@@ -61,6 +61,15 @@ Now perform the task: ${option}
 Input: ${userInput}
 Output:
 `;
+    } else if (option === "chain-of-thought") {
+      prompt = `
+You are an AI assistant. Think step by step before giving the final answer. Show reasoning clearly, then provide the solution.
+
+Task: ${option}
+Input: ${userInput}
+Reasoning:
+Final Answer:
+`;
     } else {
       prompt = `
 You are an AI assistant. Perform the task: ${option}.
