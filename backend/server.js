@@ -41,6 +41,26 @@ Task: ${option}
 Input: ${userInput}
 Output:
 `;
+    } else if (option === "multi-shot") {
+      prompt = `
+You are an AI assistant. Here are multiple examples of how to complete a task:
+
+Task: Summarize this text
+Input: "Artificial Intelligence is transforming industries worldwide."
+Output: "AI is changing industries globally."
+
+Task: Translate this text to French
+Input: "Hello, how are you?"
+Output: "Bonjour, comment ça va?"
+
+Task: Convert this to uppercase
+Input: "innovation drives growth"
+Output: "INNOVATION DRIVES GROWTH"
+
+Now perform the task: ${option}
+Input: ${userInput}
+Output:
+`;
     } else {
       prompt = `
 You are an AI assistant. Perform the task: ${option}.
