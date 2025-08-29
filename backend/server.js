@@ -154,10 +154,6 @@ Assistant Output:
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
-);
 
 // ------------------ Function Calling Example ------------------
 app.post("/api/function-call", async (req, res) => {
@@ -203,3 +199,19 @@ app.post("/api/euclidean", (req, res) => {
   const { a, b } = req.body;
   res.json({ distance: euclideanDistance(a, b) });
 });
+
+// ------------------ Dot Product Example ------------------
+function dotProduct(a, b) {
+  return a.reduce((s, v, i) => s + v * b[i], 0);
+}
+
+app.post("/api/dot", (req, res) => {
+  const { a, b } = req.body;
+  res.json({ dot: dotProduct(a, b) });
+});
+
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
+);
