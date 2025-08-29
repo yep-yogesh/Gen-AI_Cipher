@@ -14,9 +14,7 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 app.post("/api/ai", async (req, res) => {
   try {
     const { userInput, option } = req.body;
-    if (!userInput || !option) {
-      return res.status(400).json({ error: "Missing input or option" });
-    }
+    if (!userInput || !option) return res.status(400).json({ error: "Missing input or option" });
 
     let prompt = "";
     if (option === "one-shot") {
@@ -122,6 +120,34 @@ app.post("/api/cosine", (req, res) => res.json({ similarity: cosineSimilarity(re
 app.post("/api/euclidean", (req, res) => res.json({ distance: euclideanDistance(req.body.a, req.body.b) }));
 app.post("/api/dot", (req, res) => res.json({ dot: dotProduct(req.body.a, req.body.b) }));
 
+// ------------------ Minimal In-Memory Vector Database ------------------
+const vectorDB = [];
+
+app.post("/api/vector-db/add", async (req, res) => {
+  const { id, text } = req.body;
+  if (!id || !text) return res.status(400).json({ error: "Missing id or text" });
+
+  const embedding = await genAI.embedContent(text);
+  vectorDB.push({ id, text, embedding: embedding.embedding });
+
+  res.json({ success: true, stored: { id, text } });
+});
+
+app.post("/api/vector-db/query", async (req, res) => {
+  const { queryText, topK = 3 } = req.body;
+  if (!queryText) return res.status(400).json({ error: "Missing queryText" });
+
+  const queryEmbedding = await genAI.embedContent(queryText);
+  const queryVec = queryEmbedding.embedding;
+
+  const results = vectorDB
+    .map(item => ({ ...item, score: cosineSimilarity(item.embedding, queryVec) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
+
+  res.json(results);
+});
+
 // ------------------ Evaluation Dataset + Judge ------------------
 const dataset = [
   { task: "Summarize text", input: "Artificial Intelligence is transforming industries worldwide.", expected: "AI is changing industries globally." },
@@ -156,7 +182,6 @@ Assistant Output:
         modelOut = result.response.text();
       }
 
-      // Judge
       const judgeResult = await model.generateContent(judgePrompt(sample.expected, modelOut));
       let verdict;
       try {
