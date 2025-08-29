@@ -173,3 +173,10 @@ Return ONLY JSON: {"name": string, "age": number}
   const result = await model.generateContent(prompt);
   res.json(JSON.parse(result.response.text()));
 });
+
+// ------------------ Embeddings Example ------------------
+app.post("/api/embed", async (req, res) => {
+  const { text } = req.body;
+  const embedding = await genAI.embedContent(text);
+  res.json(embedding.embedding);
+});
