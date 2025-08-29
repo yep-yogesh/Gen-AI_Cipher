@@ -180,3 +180,16 @@ app.post("/api/embed", async (req, res) => {
   const embedding = await genAI.embedContent(text);
   res.json(embedding.embedding);
 });
+
+// ------------------ Cosine Similarity Example ------------------
+function cosineSimilarity(a, b) {
+  const dot = a.reduce((s, v, i) => s + v * b[i], 0);
+  const magA = Math.sqrt(a.reduce((s, v) => s + v * v, 0));
+  const magB = Math.sqrt(b.reduce((s, v) => s + v * v, 0));
+  return dot / (magA * magB);
+}
+
+app.post("/api/cosine", (req, res) => {
+  const { a, b } = req.body; // both should be arrays
+  res.json({ similarity: cosineSimilarity(a, b) });
+});
