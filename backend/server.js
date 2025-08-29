@@ -9,6 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 app.post("/api/ai", async (req, res) => {
   try {
@@ -17,28 +18,13 @@ app.post("/api/ai", async (req, res) => {
       return res.status(400).json({ error: "Missing input or option" });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
     let prompt = "";
-
     if (option === "one-shot") {
       prompt = `
-System: You are an AI assistant. Follow the RTFC framework (Role, Task, Format, Context).
-Always return output in valid JSON ONLY with this schema:
-{
-  "task": string,
-  "input": string,
-  "output": string
-}
-
-User: Task: Summarize this text
+System: You are an AI assistant. Return JSON {task,input,output}.
+User: Task: Summarize text
 User Input: "Artificial Intelligence is transforming industries worldwide."
-Assistant Output: {
-  "task": "Summarize text",
-  "input": "Artificial Intelligence is transforming industries worldwide.",
-  "output": "AI is changing industries globally."
-}
-
+Assistant Output: {"task":"Summarize text","input":"Artificial Intelligence is transforming industries worldwide.","output":"AI is changing industries globally."}
 System: Now complete the new request.
 User: Task: ${option}
 User Input: ${userInput}
@@ -46,36 +32,17 @@ Assistant Output:
 `;
     } else if (option === "zero-shot") {
       prompt = `
-System: You are an AI assistant. Follow RTFC and return only valid JSON with fields {task, input, output}.
+System: You are an AI assistant. Return JSON {task,input,output}.
 User: Task: ${option}
 User Input: ${userInput}
 Assistant Output:
 `;
     } else if (option === "multi-shot") {
       prompt = `
-System: You are an AI assistant. Follow RTFC and return only valid JSON.
-
-Example 1:
-{
-  "task": "Summarize text",
-  "input": "Artificial Intelligence is transforming industries worldwide.",
-  "output": "AI is changing industries globally."
-}
-
-Example 2:
-{
-  "task": "Translate text to French",
-  "input": "Hello, how are you?",
-  "output": "Bonjour, comment ça va?"
-}
-
-Example 3:
-{
-  "task": "Convert to uppercase",
-  "input": "innovation drives growth",
-  "output": "INNOVATION DRIVES GROWTH"
-}
-
+System: You are an AI assistant. Return JSON {task,input,output}.
+Example 1: {"task":"Summarize text","input":"Artificial Intelligence is transforming industries worldwide.","output":"AI is changing industries globally."}
+Example 2: {"task":"Translate text to French","input":"Hello, how are you?","output":"Bonjour, comment ça va?"}
+Example 3: {"task":"Convert to uppercase","input":"innovation drives growth","output":"INNOVATION DRIVES GROWTH"}
 System: Now complete the new request.
 User: Task: ${option}
 User Input: ${userInput}
@@ -83,38 +50,25 @@ Assistant Output:
 `;
     } else if (option === "chain-of-thought") {
       prompt = `
-System: You are an AI assistant. Think step by step internally but return ONLY the final structured JSON.
-Schema: {task, input, output}
-User: Task: ${option}
-User Input: ${userInput}
-Assistant Output:
-`;
-    } else if (option === "system-user") {
-      prompt = `
-System: You are an AI assistant. Strictly return JSON with {task, input, output}.
+System: Think step by step internally but return ONLY JSON {task,input,output}.
 User: Task: ${option}
 User Input: ${userInput}
 Assistant Output:
 `;
     } else if (option === "dynamic") {
       let dynamicTask = "General Task";
-      if (userInput.length > 200) {
-        dynamicTask = "Summarize the following long text concisely";
-      } else if (userInput.includes("?")) {
-        dynamicTask = "Answer the following question clearly";
-      } else if (userInput.match(/translate to/i)) {
-        dynamicTask = "Translate the following text accordingly";
-      }
-
+      if (userInput.length > 200) dynamicTask = "Summarize the following long text concisely";
+      else if (userInput.includes("?")) dynamicTask = "Answer the following question clearly";
+      else if (userInput.match(/translate to/i)) dynamicTask = "Translate the following text accordingly";
       prompt = `
-System: You are an AI assistant. Use dynamic prompting but always return valid JSON {task, input, output}.
+System: Use dynamic prompting. Always return JSON {task,input,output}.
 User: Task: ${dynamicTask}
 User Input: ${userInput}
 Assistant Output:
 `;
     } else {
       prompt = `
-System: You are an AI assistant. Perform the task but always return JSON {task, input, output}.
+System: You are an AI assistant. Return JSON {task,input,output}.
 User: Task: ${option}
 User Input: ${userInput}
 Assistant Output:
@@ -122,29 +76,14 @@ Assistant Output:
     }
 
     const tokenInfo = await model.countTokens(prompt);
-    console.log(`🔢 Tokens used for this request: ${tokenInfo.totalTokens}`);
-
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.7,
-        topP: 0.9,
-        topK: 40,
-        stopSequences: ["Assistant Output:"],
-      },
-    });
-
+    const result = await model.generateContent({ contents: [{ role: "user", parts: [{ text: prompt }] }] });
     let responseText = result.response.text();
 
     let structuredOutput;
     try {
       structuredOutput = JSON.parse(responseText);
-    } catch (e) {
-      structuredOutput = {
-        task: option,
-        input: userInput,
-        output: responseText.trim(),
-      };
+    } catch {
+      structuredOutput = { task: option, input: userInput, output: responseText.trim() };
     }
 
     res.json({ response: structuredOutput, tokens: tokenInfo.totalTokens });
@@ -154,64 +93,86 @@ Assistant Output:
   }
 });
 
-
-// ------------------ Function Calling Example ------------------
+// ------------------ Function Calling ------------------
 app.post("/api/function-call", async (req, res) => {
   const { userInput } = req.body;
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-  const prompt = `
-Extract name and age from text.
-Input: "${userInput}"
-Return ONLY JSON: {"name": string, "age": number}
-`;
-
+  const prompt = `Extract name and age. Input: "${userInput}" Return ONLY JSON: {"name": string, "age": number}`;
   const result = await model.generateContent(prompt);
   res.json(JSON.parse(result.response.text()));
 });
 
-// ------------------ Embeddings Example ------------------
+// ------------------ Embeddings ------------------
 app.post("/api/embed", async (req, res) => {
   const { text } = req.body;
   const embedding = await genAI.embedContent(text);
   res.json(embedding.embedding);
 });
 
-// ------------------ Cosine Similarity Example ------------------
-function cosineSimilarity(a, b) {
+// ------------------ Similarity Functions ------------------
+const cosineSimilarity = (a, b) => {
   const dot = a.reduce((s, v, i) => s + v * b[i], 0);
   const magA = Math.sqrt(a.reduce((s, v) => s + v * v, 0));
   const magB = Math.sqrt(b.reduce((s, v) => s + v * v, 0));
   return dot / (magA * magB);
-}
+};
+const euclideanDistance = (a, b) => Math.sqrt(a.reduce((s, v, i) => s + (v - b[i]) ** 2, 0));
+const dotProduct = (a, b) => a.reduce((s, v, i) => s + v * b[i], 0);
 
-app.post("/api/cosine", (req, res) => {
-  const { a, b } = req.body; // both should be arrays
-  res.json({ similarity: cosineSimilarity(a, b) });
+app.post("/api/cosine", (req, res) => res.json({ similarity: cosineSimilarity(req.body.a, req.body.b) }));
+app.post("/api/euclidean", (req, res) => res.json({ distance: euclideanDistance(req.body.a, req.body.b) }));
+app.post("/api/dot", (req, res) => res.json({ dot: dotProduct(req.body.a, req.body.b) }));
+
+// ------------------ Evaluation Dataset + Judge ------------------
+const dataset = [
+  { task: "Summarize text", input: "Artificial Intelligence is transforming industries worldwide.", expected: "AI is changing industries globally." },
+  { task: "Translate text to French", input: "Hello, how are you?", expected: "Bonjour, comment ça va?" },
+  { task: "Convert to uppercase", input: "innovation drives growth", expected: "INNOVATION DRIVES GROWTH" },
+  { task: "Answer question", input: "What is the capital of France?", expected: "Paris" },
+  { task: "Summarize text", input: "Machine learning enables systems to learn without being explicitly programmed.", expected: "ML lets systems learn without explicit programming." }
+];
+
+app.get("/api/evaluate", async (req, res) => {
+  try {
+    const judgePrompt = (expected, actual) => `
+You are a strict evaluator. Compare the EXPECTED vs MODEL OUTPUT. 
+Return ONLY JSON: {"match": boolean, "reason": string}
+EXPECTED: "${expected}"
+MODEL OUTPUT: "${actual}"
+`;
+
+    const results = [];
+    for (let sample of dataset) {
+      const userPrompt = `
+System: Return JSON {task,input,output}.
+User: Task: ${sample.task}
+User Input: ${sample.input}
+Assistant Output:
+`;
+      const result = await model.generateContent(userPrompt);
+      let modelOut;
+      try {
+        modelOut = JSON.parse(result.response.text()).output;
+      } catch {
+        modelOut = result.response.text();
+      }
+
+      // Judge
+      const judgeResult = await model.generateContent(judgePrompt(sample.expected, modelOut));
+      let verdict;
+      try {
+        verdict = JSON.parse(judgeResult.response.text());
+      } catch {
+        verdict = { match: false, reason: "Invalid judge response" };
+      }
+
+      results.push({ ...sample, modelOut, ...verdict });
+    }
+    res.json(results);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Evaluation failed" });
+  }
 });
-
-// ------------------ Euclidean Distance Example ------------------
-function euclideanDistance(a, b) {
-  return Math.sqrt(a.reduce((s, v, i) => s + (v - b[i]) ** 2, 0));
-}
-
-app.post("/api/euclidean", (req, res) => {
-  const { a, b } = req.body;
-  res.json({ distance: euclideanDistance(a, b) });
-});
-
-// ------------------ Dot Product Example ------------------
-function dotProduct(a, b) {
-  return a.reduce((s, v, i) => s + v * b[i], 0);
-}
-
-app.post("/api/dot", (req, res) => {
-  const { a, b } = req.body;
-  res.json({ dot: dotProduct(a, b) });
-});
-
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () =>
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
-);
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
