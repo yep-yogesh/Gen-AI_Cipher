@@ -158,3 +158,18 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
   console.log(`🚀 Server running on http://localhost:${PORT}`)
 );
+
+// ------------------ Function Calling Example ------------------
+app.post("/api/function-call", async (req, res) => {
+  const { userInput } = req.body;
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  const prompt = `
+Extract name and age from text.
+Input: "${userInput}"
+Return ONLY JSON: {"name": string, "age": number}
+`;
+
+  const result = await model.generateContent(prompt);
+  res.json(JSON.parse(result.response.text()));
+});
