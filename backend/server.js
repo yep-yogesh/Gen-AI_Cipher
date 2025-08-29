@@ -193,3 +193,13 @@ app.post("/api/cosine", (req, res) => {
   const { a, b } = req.body; // both should be arrays
   res.json({ similarity: cosineSimilarity(a, b) });
 });
+
+// ------------------ Euclidean Distance Example ------------------
+function euclideanDistance(a, b) {
+  return Math.sqrt(a.reduce((s, v, i) => s + (v - b[i]) ** 2, 0));
+}
+
+app.post("/api/euclidean", (req, res) => {
+  const { a, b } = req.body;
+  res.json({ distance: euclideanDistance(a, b) });
+});
